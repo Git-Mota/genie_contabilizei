@@ -2,6 +2,7 @@ import { Send } from 'lucide-react';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { useState, KeyboardEvent } from 'react';
+import logo from '../../assets/logo.png';
 
 interface ChatInputProps {
   onSend: (message: string) => void;

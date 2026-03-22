@@ -1,6 +1,6 @@
 import { Bot, Menu, Plus } from 'lucide-react';
 import { Button } from './ui/button';
-import logo from 'figma:asset/98cbf83f9a88db9560e2e22a82c966e2efbff843.png';
+import logo from '../../assets/logo.png';
 
 interface ChatHeaderProps {
   onNewChat?: () => void;

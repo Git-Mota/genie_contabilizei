@@ -1,5 +1,5 @@
 import { Bot, User } from 'lucide-react';
-import logo from 'figma:asset/98cbf83f9a88db9560e2e22a82c966e2efbff843.png';
+import logo from '../../assets/logo.png';
 
 export interface Message {
   id: string;
