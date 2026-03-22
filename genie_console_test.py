@@ -18,9 +18,11 @@ load_dotenv()  # carrega as variaveis do arquivo .env
 # ─────────────────────────────────────────────
 # CONFIGURACAO
 # ─────────────────────────────────────────────
-DATABRICKS_HOST = os.getenv("DATABRICKS_HOST", "https://SEU-WORKSPACE.azuredatabricks.net")
-DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN", "seu-token-aqui")
-GENIE_SPACE_ID = os.getenv("GENIE_SPACE_ID", "seu-space-id-aqui")
+DATABRICKS_HOST = os.getenv("DATABRICKS_HOST")
+DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN") 
+GENIE_SPACE_ID = os.getenv("GENIE_SPACE_ID") 
+
+print(DATABRICKS_HOST, DATABRICKS_TOKEN, GENIE_SPACE_ID)  
 
 # Intervalo entre tentativas de polling (segundos)
 POLL_INTERVAL = 2
