@@ -1,20 +1,18 @@
-// Aponta para o backend FastAPI.
-// Configure no front/.env:
-//   VITE_API_URL=http://localhost:8000
-
 const API_URL = (import.meta.env.VITE_API_URL as string ?? "http://localhost:8000").replace(/\/$/, "");
 
 export type ResponseMode = "normal" | "executive" | "chart";
+
+export interface AssistantResponse {
+  answer: string;
+  conversation_id: string;
+  sql_query: string | null;
+  suggestions: string[];
+}
 
 interface ChatRequest {
   question: string;
   conversation_id: string | null;
   mode: ResponseMode;
-}
-
-interface ChatResponse {
-  answer: string;
-  conversation_id: string;
 }
 
 let currentConversationId: string | null = null;
@@ -26,7 +24,7 @@ export function resetConversation() {
 export async function sendChatRequest(
   messages: Array<{ role: "user" | "assistant" | "system"; content: string }>,
   mode: ResponseMode = "normal"
-): Promise<string> {
+): Promise<AssistantResponse> {
   const question = messages[messages.length - 1].content;
 
   const body: ChatRequest = {
@@ -46,8 +44,8 @@ export async function sendChatRequest(
     throw new Error(error.detail ?? "Erro desconhecido");
   }
 
-  const data: ChatResponse = await res.json();
+  const data: AssistantResponse = await res.json();
   currentConversationId = data.conversation_id;
 
-  return data.answer;
+  return data;
 }

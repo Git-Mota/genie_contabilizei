@@ -9,9 +9,9 @@ import { Toaster } from './components/ui/sonner';
 import logo from '../assets/logo.png';
 
 export default function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages]   = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef            = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -38,15 +38,16 @@ export default function App() {
         content: msg.content,
       }));
 
-      // Passa o mode para o backend — lógica de formatação fica no servidor
       const response = await sendChatRequest(apiMessages, mode);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response,
+        content: response.answer,
         timestamp: new Date(),
         mode,
+        sql_query:   response.sql_query,
+        suggestions: response.suggestions,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -108,7 +109,11 @@ export default function App() {
         ) : (
           <div className="pb-4">
             {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+              <ChatMessage
+                key={message.id}
+                message={message}
+                onSuggestionClick={(text) => handleSendMessage(text, 'normal')}
+              />
             ))}
 
             {isLoading && (

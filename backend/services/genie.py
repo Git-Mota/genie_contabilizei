@@ -95,24 +95,20 @@ def extract_query_sql(message_data: dict) -> str | None:
 
 
 # ──────────────────────────────────────────────
-# SQL Statement API — executa query e retorna linhas
+# SQL Statement API
 # ──────────────────────────────────────────────
 
 def run_sql(sql: str, limit: int = 50) -> list[dict]:
-    """Executa uma SQL via Databricks Statement API e retorna lista de dicts."""
+    """Executa SQL via Databricks Statement API e retorna lista de dicts."""
     if not DATABRICKS_WAREHOUSE:
-        raise ValueError(
-            "DATABRICKS_WAREHOUSE_ID nao configurado no .env. "
-            "Necessario para o modo grafico."
-        )
+        raise ValueError("DATABRICKS_WAREHOUSE_ID nao configurado no .env.")
 
-    # Limita resultado para nao sobrecarregar o front
     bounded_sql = f"SELECT * FROM ({sql.rstrip(';').strip()}) AS _q LIMIT {limit}"
 
     payload = {
         "statement": bounded_sql,
         "warehouse_id": DATABRICKS_WAREHOUSE,
-        "wait_timeout": "30s",  # aguarda sincrono ate 30s
+        "wait_timeout": "30s",
         "on_wait_timeout": "CANCEL",
     }
 
@@ -120,7 +116,6 @@ def run_sql(sql: str, limit: int = 50) -> list[dict]:
     response.raise_for_status()
     data = response.json()
 
-    # Aguarda conclusao se ainda estiver pendente
     statement_id = data.get("statement_id")
     status = data.get("status", {}).get("state")
 
@@ -135,36 +130,27 @@ def run_sql(sql: str, limit: int = 50) -> list[dict]:
 
     if status != "SUCCEEDED":
         error = data.get("status", {}).get("error", {}).get("message", "Erro desconhecido")
+        print(f"[CHART] SQL executada:\n{bounded_sql}")
+        print(f"[CHART] Status: {status} | Erro: {error}")
         raise RuntimeError(f"SQL falhou ({status}): {error}")
 
-    # Monta lista de dicts a partir de columns + data_array
-    result = data.get("result", {})
-    schema = data.get("manifest", {}).get("schema", {}).get("columns", [])
+    result  = data.get("result", {})
+    schema  = data.get("manifest", {}).get("schema", {}).get("columns", [])
     columns = [col["name"] for col in schema]
-    rows = result.get("data_array") or []
+    rows    = result.get("data_array") or []
 
     return [dict(zip(columns, row)) for row in rows]
 
 
 def rows_to_chart_json(rows: list[dict]) -> str:
-    """
-    Converte linhas tabulares em JSON para o front renderizar com Recharts.
-
-    Heuristica:
-    - Primeira coluna string/date = 'name'
-    - Demais colunas numéricas = métricas
-    - chartType: pie se uma metrica + <= 10 linhas, bar caso contrário
-    """
+    """Converte linhas tabulares em JSON para Recharts."""
     if not rows:
         return json.dumps({"chartType": "bar", "data": []})
 
-    keys = list(rows[0].keys())
-
-    # Identifica coluna de categoria (primeira nao-numerica)
-    name_key = keys[0]
+    keys        = list(rows[0].keys())
+    name_key    = keys[0]
     metric_keys = [k for k in keys[1:] if k != name_key]
 
-    # Converte valores numericos
     data = []
     for row in rows:
         entry: dict = {"name": str(row.get(name_key, ""))}
@@ -176,15 +162,40 @@ def rows_to_chart_json(rows: list[dict]) -> str:
                 entry[mk] = 0
         data.append(entry)
 
-    # Escolhe tipo de grafico
-    if len(metric_keys) == 1 and len(data) <= 10:
-        chart_type = "pie"
-    elif len(metric_keys) > 1:
-        chart_type = "bar"
-    else:
-        chart_type = "bar"
+    chart_type = "pie" if len(metric_keys) == 1 and len(data) <= 10 else "bar"
 
     return json.dumps({"chartType": chart_type, "data": data}, ensure_ascii=False)
+
+
+# ──────────────────────────────────────────────
+# Sugestões contextuais via Genie
+# ──────────────────────────────────────────────
+
+def get_suggestions(question: str, answer: str, conversation_id: str) -> list[str]:
+    """
+    Pede ao Genie 3 perguntas de follow-up com base no contexto atual.
+    Retorna lista de strings ou lista vazia em caso de falha.
+    """
+    prompt = (
+        f"Com base na pergunta '{question}' e na resposta recebida, "
+        "sugira exatamente 3 perguntas de follow-up relevantes que um analista faria a seguir. "
+        "Responda APENAS com as 3 perguntas, uma por linha, sem numeracao, sem bullet points, sem texto adicional."
+    )
+
+    try:
+        msg = send_message(conversation_id, prompt)
+        mid = msg.get("id")
+        if not mid:
+            return []
+
+        final = poll_message(conversation_id, mid)
+        text  = extract_response_text(final)
+
+        lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
+        return lines[:3]
+    except Exception as e:
+        print(f"[SUGGESTIONS] Falha ao gerar sugestoes: {e}")
+        return []
 
 
 # ──────────────────────────────────────────────
@@ -195,10 +206,13 @@ def ask_genie(
     question: str,
     conversation_id: str | None,
     mode: str = "normal",
-) -> tuple[str, str]:
+) -> tuple[str, str | None, list[str], str]:
     """
-    Envia pergunta ao Genie e retorna (resposta, conversation_id).
-    Quando mode='chart', extrai a SQL gerada e executa para obter dados tabulares.
+    Retorna (answer, sql_query, suggestions, conversation_id).
+    - answer          : texto da resposta ou JSON de grafico
+    - sql_query       : SQL gerada pelo Genie (None se nao disponivel)
+    - suggestions     : lista de perguntas de follow-up
+    - conversation_id : ID da conversa (novo ou existente)
     """
     if conversation_id is None:
         result = start_conversation(question)
@@ -211,17 +225,30 @@ def ask_genie(
     if not message_id:
         raise ValueError("Nao foi possivel obter o message_id da resposta.")
 
-    final = poll_message(conversation_id, message_id)
+    final     = poll_message(conversation_id, message_id)
+    sql_query = extract_query_sql(final)
 
     if mode == "chart":
-        sql = extract_query_sql(final)
-        if sql:
-            rows = run_sql(sql)
+        # Genie respondeu em texto sem gerar SQL — pede a query explicitamente
+        if not sql_query:
+            retry_msg = send_message(
+                conversation_id,
+                "Gere apenas a query SQL para responder a pergunta anterior, sem texto adicional."
+            )
+            retry_id = retry_msg.get("id")
+            if retry_id:
+                retry_final = poll_message(conversation_id, retry_id)
+                sql_query   = extract_query_sql(retry_final)
+
+        if sql_query:
+            rows   = run_sql(sql_query)
             answer = rows_to_chart_json(rows)
         else:
-            # Fallback: sem SQL disponivel, retorna texto normal
+            # Fallback: retorna o texto que o Genie gerou
             answer = extract_response_text(final)
     else:
         answer = extract_response_text(final)
 
-    return answer, conversation_id
+    suggestions = get_suggestions(question, answer, conversation_id)
+
+    return answer, sql_query, suggestions, conversation_id
