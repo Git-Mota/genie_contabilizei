@@ -4,9 +4,12 @@
 
 const API_URL = (import.meta.env.VITE_API_URL as string ?? "http://localhost:8000").replace(/\/$/, "");
 
+export type ResponseMode = "normal" | "executive" | "chart";
+
 interface ChatRequest {
   question: string;
   conversation_id: string | null;
+  mode: ResponseMode;
 }
 
 interface ChatResponse {
@@ -21,13 +24,15 @@ export function resetConversation() {
 }
 
 export async function sendChatRequest(
-  messages: Array<{ role: "user" | "assistant" | "system"; content: string }>
+  messages: Array<{ role: "user" | "assistant" | "system"; content: string }>,
+  mode: ResponseMode = "normal"
 ): Promise<string> {
   const question = messages[messages.length - 1].content;
 
   const body: ChatRequest = {
     question,
     conversation_id: currentConversationId,
+    mode,
   };
 
   const res = await fetch(`${API_URL}/chat`, {
