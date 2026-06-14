@@ -252,3 +252,19 @@ def ask_genie(
     suggestions = get_suggestions(question, answer, conversation_id)
 
     return answer, sql_query, suggestions, conversation_id
+    
+def ask_genie_simple(question: str) -> str:
+    """
+    Faz uma pergunta ao Genie em uma conversa nova e independente.
+    Sem sugestões, sem modo chart. Usado pelo dashboard.
+    """
+    result          = start_conversation(question)
+    conversation_id = result.get("conversation_id") or result.get("id")
+    msg             = result.get("message", result)
+
+    message_id = msg.get("id")
+    if not message_id:
+        raise ValueError("Nao foi possivel obter o message_id.")
+
+    final = poll_message(conversation_id, message_id)
+    return extract_response_text(final)
