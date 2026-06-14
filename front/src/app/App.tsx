@@ -5,6 +5,7 @@ import { ChatInput } from './components/ChatInput';
 import { SessionHistory, HistoryEntry } from './components/SessionHistory';
 import { Dashboard } from './components/Dashboard';
 import { sendChatRequest, resetConversation } from './services/databricks-api';
+import { useExportPDF } from './hooks/useExportPDF';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Toaster } from './components/ui/sonner';
@@ -13,9 +14,14 @@ import logo from '../assets/logo.png';
 export default function App() {
   const [messages, setMessages]       = useState<Message[]>([]);
   const [isLoading, setIsLoading]     = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [history, setHistory]         = useState<HistoryEntry[]>([]);
-  const messagesEndRef                = useRef<HTMLDivElement>(null);
-  const messageRefs                   = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const messagesEndRef  = useRef<HTMLDivElement>(null);
+  const messagesAreaRef = useRef<HTMLDivElement>(null); // ref para captura do PDF
+  const messageRefs     = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const { exportPDF } = useExportPDF(messages, messagesAreaRef);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,13 +40,10 @@ export default function App() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-
-    // Adiciona ao histórico lateral
     setHistory((prev) => [
       ...prev,
       { messageId: userMessage.id, question: content, timestamp: new Date() },
     ]);
-
     setIsLoading(true);
 
     try {
@@ -77,7 +80,19 @@ export default function App() {
     toast.success('Nova conversa iniciada');
   };
 
-  // Rola até a mensagem clicada no histórico
+const handleExport = async () => {
+  setIsExporting(true);
+  try {
+    await exportPDF();
+    toast.success('PDF exportado com sucesso');
+  } catch (e) {
+    console.error('Erro ao exportar PDF:', e); // adicione esse log
+    toast.error('Erro ao exportar PDF');
+  } finally {
+    setIsExporting(false);
+  }
+};
+
   const handleHistoryClick = (messageId: string) => {
     const el = messageRefs.current[messageId];
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -88,24 +103,29 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-white">
       <Toaster />
-      <ChatHeader onNewChat={handleNewChat} />
+      <ChatHeader
+        onNewChat={handleNewChat}
+        onExport={handleExport}
+        hasMessages={hasMessages}
+        isExporting={isExporting}
+      />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar de histórico — só aparece quando há mensagens */}
         {hasMessages && (
           <SessionHistory entries={history} onEntryClick={handleHistoryClick} />
         )}
 
-        {/* Área principal */}
         <div className="flex flex-col flex-1 overflow-hidden">
           <main className="flex-1 overflow-y-auto">
             {!hasMessages ? (
               <Dashboard onQuestionClick={(q) => handleSendMessage(q, 'normal')} />
             ) : (
-              <div className="pb-4">
+              // ref aqui para o html2canvas capturar
+              <div className="pb-4" ref={messagesAreaRef}>
                 {messages.map((message) => (
                   <div
                     key={message.id}
+                    data-message-id={message.id}
                     ref={(el) => { messageRefs.current[message.id] = el; }}
                   >
                     <ChatMessage
