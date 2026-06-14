@@ -2,6 +2,22 @@
 
 ## Configuração inicial
 
+Crie um arquivo .env na raiz do projeto com as seguintes variáveis: 
+```powershell
+DATABRICKS_HOST=https://sua-instancia.azuredatabricks.net 
+
+DATABRICKS_TOKEN=dapi_seu_token_aqui 
+
+GENIE_SPACE_ID=seu_space_id_aqui 
+
+DATABRICKS_WAREHOUSE_ID=seu_warehouse_id_aqui
+
+```
+Para configurar o frontend com URL de API personalizada, crie front/.env: 
+```powershell
+VITE_API_URL=http://localhost:8000 
+```
+
 Abra um terminal no VS Code e certifique-se de estar na pasta `genie_contabilizei`.
 
 Execute os comandos abaixo em sequência:
