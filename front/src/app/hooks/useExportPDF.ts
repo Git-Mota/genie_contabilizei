@@ -90,7 +90,7 @@ export function useExportPDF(
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(11);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Copilot Contabilizei', margin, 11);
+      pdf.text('SwellData', margin, 11);
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'normal');
       pdf.text(`Exportado em ${formatDate(new Date())}`, pageW - margin, 11, { align: 'right' });
@@ -107,7 +107,7 @@ export function useExportPDF(
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(isUser ? 80 : 0, isUser ? 80 : 87, isUser ? 80 : 184);
-        pdf.text(isUser ? 'Você' : 'Copilot', margin, y);
+        pdf.text(isUser ? 'Você' : 'SwellData', margin, y);
         y += 5;
 
         // Texto da resposta (exceto quando é gráfico puro)
@@ -163,7 +163,7 @@ export function useExportPDF(
         y += 6;
       }
 
-      pdf.save(`conversa-copilot-${Date.now()}.pdf`);
+      pdf.save(`conversa-swelldata-${Date.now()}.pdf`);
     } finally {
       isExporting.current = false;
     }

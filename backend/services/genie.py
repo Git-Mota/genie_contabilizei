@@ -70,12 +70,16 @@ def extract_response_text(message_data: dict) -> str:
 
     attachments = message_data.get("attachments") or []
 
+    parts = []
     for attachment in attachments:
         text_block = attachment.get("text")
         if text_block:
             content = text_block.get("content", "")
             if content:
-                return content
+                parts.append(content)
+
+    if parts:
+        return "\n\n".join(parts)
 
     return "Sem conteudo na resposta."
 
@@ -244,8 +248,29 @@ def ask_genie(
             rows   = run_sql(sql_query)
             answer = rows_to_chart_json(rows)
         else:
-            # Fallback: retorna o texto que o Genie gerou
             answer = extract_response_text(final)
+
+    elif mode == "executive":
+        raw_answer = extract_response_text(final)
+        exec_prompt = (
+            "Com base na resposta anterior, gere um resumo executivo com exatamente este formato:\n\n"
+            "**Conclusão principal:** [uma frase direta com o insight mais importante]\n\n"
+            "**Destaques:**\n"
+            "- [ponto 1 com número/dado]\n"
+            "- [ponto 2 com número/dado]\n"
+            "- [ponto 3 com número/dado]\n\n"
+            "**Recomendação:** [ação ou próximo passo sugerido]\n\n"
+            "Seja direto, use dados concretos, máximo 5 linhas no total."
+        )
+        exec_msg = send_message(conversation_id, exec_prompt)
+        exec_id  = exec_msg.get("id")
+        if exec_id:
+            exec_final = poll_message(conversation_id, exec_id)
+            exec_text  = extract_response_text(exec_final)
+            answer = exec_text if exec_text and exec_text != "Sem conteudo na resposta." else raw_answer
+        else:
+            answer = raw_answer
+
     else:
         answer = extract_response_text(final)
 

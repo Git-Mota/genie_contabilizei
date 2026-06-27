@@ -1,4 +1,4 @@
-# genie_contabilizei
+# SwellData
 
 ## Configuração inicial
 
@@ -18,7 +18,7 @@ Para configurar o frontend com URL de API personalizada, crie front/.env:
 VITE_API_URL=http://localhost:8000 
 ```
 
-Abra um terminal no VS Code e certifique-se de estar na pasta `genie_contabilizei`.
+Abra um terminal no VS Code e certifique-se de estar na pasta `genie_contabilizei` (projeto SwellData).
 
 Execute os comandos abaixo em sequência:
 ```powershell

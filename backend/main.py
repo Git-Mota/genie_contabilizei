@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers import chat
 from routers.dashboard import router_dashboard
 
-app = FastAPI(title="Genie Contabilizei API")
+app = FastAPI(title="SwellData API")
 
 app.add_middleware(
     CORSMiddleware,

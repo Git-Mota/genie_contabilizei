@@ -210,3 +210,6 @@ __marimo__/
 front/node_modules/
 front/dist/
 front/.env
+
+# Ignore original swelldata SVG (we keep the React component)
+front/src/app/components/figma/swelldata-icon.svg

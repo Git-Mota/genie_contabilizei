@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { User, Copy, Check, ChevronDown, ChevronUp, Download } from 'lucide-react';
-import logo from '../../assets/logo.png';
+import SwellLogo from './figma/SwellLogo';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -51,7 +51,7 @@ function renderInline(text: string): React.ReactNode {
 
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={i} className="font-semibold text-slate-900">{part.slice(2, -2)}</strong>;
+      return <strong key={i} className="font-semibold text-slate-900 dark:text-slate-100">{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith('*') && part.endsWith('*')) {
       return <em key={i}>{part.slice(1, -1)}</em>;
@@ -64,7 +64,7 @@ function MarkdownText({ content }: { content: string }) {
   const lines = content.split('\n');
 
   return (
-    <div className="text-sm text-slate-800 leading-relaxed space-y-1">
+    <div className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed space-y-1">
       {lines.map((line, i) => {
         const trimmed = line.trim();
 
@@ -147,10 +147,10 @@ function SqlBlock({ sql }: { sql: string }) {
   };
 
   return (
-    <div className="mt-3 rounded-lg border border-slate-200 overflow-hidden">
+    <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 hover:bg-slate-100 transition-colors text-[11px] font-medium text-slate-500"
+        className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-[11px] font-medium text-slate-500 dark:text-slate-400"
       >
         <span>SQL gerada pelo Genie</span>
         {open ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
@@ -248,9 +248,9 @@ function ChartRenderer({ content }: { content: string }) {
 
 function ModeBadge({ mode }: { mode: ResponseMode }) {
   const config: Record<ResponseMode, { label: string; className: string }> = {
-    normal:    { label: 'Resposta normal',        className: 'bg-zinc-100 text-zinc-500' },
-    executive: { label: 'Resumo executivo',        className: 'bg-blue-50 text-blue-600' },
-    chart:     { label: 'Visualização em gráfico', className: 'bg-emerald-50 text-emerald-600' },
+    normal:    { label: 'Normal',    className: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400' },
+    executive: { label: 'Executivo', className: 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' },
+    chart:     { label: 'Gráfico',   className: 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' },
   };
   const { label, className } = config[mode];
   return (
@@ -267,16 +267,16 @@ export function ChatMessage({ message, onSuggestionClick }: ChatMessageProps) {
   const isChart = !isUser && message.mode === 'chart';
 
   return (
-    <div className={`flex gap-3 px-6 py-5 ${isUser ? 'bg-transparent' : 'bg-slate-50/70'}`}>
+    <div className={`flex gap-3 px-6 py-5 ${isUser ? 'bg-transparent' : 'bg-slate-50/70 dark:bg-slate-800/40'}`}>
       {/* Avatar */}
       <div className="flex-shrink-0 mt-0.5">
         {isUser ? (
-          <div className="size-7 rounded-full flex items-center justify-center bg-slate-800 text-white">
+          <div className="size-7 rounded-full flex items-center justify-center bg-slate-800 dark:bg-slate-600 text-white">
             <User className="size-3.5" />
           </div>
         ) : (
-          <div className="size-7 rounded-full bg-white border border-slate-200 flex items-center justify-center p-1">
-            <img src={logo} alt="Copilot" className="size-full object-contain" />
+          <div className="size-7 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center p-1">
+            <SwellLogo className="size-full object-contain" ariaLabel="SwellData" />
           </div>
         )}
       </div>
@@ -284,17 +284,20 @@ export function ChatMessage({ message, onSuggestionClick }: ChatMessageProps) {
       {/* Conteúdo */}
       <div className="flex-1 min-w-0 space-y-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-700">
-            {isUser ? 'Você' : 'Copilot'}
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            {isUser ? 'Você' : 'SwellData'}
           </span>
-          {!isUser && message.mode && message.mode !== 'normal' && (
+          {isUser && message.mode && message.mode !== 'normal' && (
+            <ModeBadge mode={message.mode} />
+          )}
+          {!isUser && message.mode && (
             <ModeBadge mode={message.mode} />
           )}
         </div>
 
         {/* Corpo — usuário usa texto simples, assistente usa markdown */}
         {isUser ? (
-          <div className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap break-words">
+          <div className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap break-words">
             {message.content}
           </div>
         ) : isChart ? (
@@ -311,7 +314,7 @@ export function ChatMessage({ message, onSuggestionClick }: ChatMessageProps) {
               {!isChart && (
                 <button
                   onClick={() => exportTXT(message.content)}
-                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-700 transition-colors"
+                  className="flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
                 >
                   <Download className="size-3" />
                   Exportar TXT
@@ -323,14 +326,14 @@ export function ChatMessage({ message, onSuggestionClick }: ChatMessageProps) {
 
             {message.suggestions && message.suggestions.length > 0 && (
               <div className="space-y-1.5 pt-1">
-                <p className="text-[11px] font-medium text-slate-400">Perguntas sugeridas</p>
+                <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perguntas sugeridas</p>
                 <div className="flex flex-col gap-1.5">
                   {message.suggestions.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => onSuggestionClick?.(s)}
-                      className="text-left text-[12px] text-slate-600 border border-slate-200 rounded-lg px-3 py-2
-                        hover:border-slate-400 hover:bg-white transition-all"
+                      className="text-left text-[12px] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2
+                        hover:border-slate-400 dark:hover:border-slate-500 hover:bg-white dark:hover:bg-slate-800 transition-all"
                     >
                       {s}
                     </button>
